@@ -5,20 +5,21 @@
 #include <stdbool.h>
 #include "ram.h"
 
+// flags
 #define FLAG_ZERO  0x01     // bit 0
 #define FLAG_CARRY 0x02     // bit 1
 
 typedef struct {
-    uint8_t A, B;       // general purpose registers
-    uint16_t PC;        // program counter
-    uint16_t SP;        // stack pointer
-    uint8_t FLAGS;      // flags register
-    bool halted;        // stop execution flag
+    uint8_t registers[2];   // general purpose registers
+    uint16_t PC;            // program counter
+    uint16_t SP;            // stack pointer
+    uint8_t FLAGS;          // flags register
+    bool halted;            // stop execution flag
 } CPU;
 
 typedef enum {
-    REG_A = 0,          // A register
-    REG_B = 1           // B register
+    A = 0x00,          // A register
+    B = 0x01           // B register
 } Register;
 
 typedef enum {
@@ -28,12 +29,12 @@ typedef enum {
     LDI = 0x03,         // load given value immediately into A
     INC = 0x04,         // increment A
     DEC = 0x05,         // decrement A
-    ADD = 0x06,         // add B to A
-    SUB = 0x07,         // subtract B from A
-    MUL = 0x08,         // multiply A with B
+    ADD = 0x06,         // add <register2> to <register1>: ADD A, B
+    SUB = 0x07,         // subtract B from A: SUB A, B
+    MUL = 0x08,         // multiply A with B: MUL A, B
     STA = 0x09,         // store A to memory
     STB = 0x0A,         // store B to memory
-    MOV = 0x0B,         // move register into A (for now, there is only one other register than A => B)
+    MOV = 0x0B,         // move to registers: MOV A, B
     CMP = 0x0C,         // compare A to B
     JMP = 0x0D,         // jump to address
     JZ  = 0x0E,         // jump if zero flag is set
@@ -45,12 +46,17 @@ typedef enum {
     HLT = 0xFF          // halt CPU
 } Instruction;
 
+// CPU
 void cpu_reset(CPU *cpu);
 void cpu_step(CPU* cpu, RAM* ram);
 
+// FLAG LOGIC
 void set_flag(uint8_t* flags, uint8_t mask);
 void clear_flag(uint8_t* flags, uint8_t mask);
 bool is_flag_set(uint8_t flags, uint8_t mask);
 void update_flags(CPU* cpu, uint16_t result);
+
+// REGISTER BOUNDS CHECK
+bool register_out_of_bounds(CPU* cpu, uint8_t registers);
 
 #endif //CPU_H
