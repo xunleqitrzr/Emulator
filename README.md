@@ -23,3 +23,9 @@
 - a non-implemented bus system
   - not implemented yet 
   - yeah, not much to say here
+
+
+### Important:
+There are no security implementations yet. <br>
+You are able to modify the code from within the code itself. <br>
+This may sound stupid and it is. But it is too early to implement any security.
