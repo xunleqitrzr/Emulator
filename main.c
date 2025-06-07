@@ -30,26 +30,34 @@ int main(void) {
     cpu.B = 10;
     */
 
+    // uint8_t program[] = {
+    //     LDA, 0x00, 0x20,
+    //     LDB, 0x00, 0x21,
+    //     ADD,
+    //     STA, 0x00, 0x22,
+    //     LDB, 0x00, 0x22,
+    //     ADD,
+    //     STA, 0x00, 0x23,
+    //     JMP, 0x00, 0x00,
+    //     HLT
+    // };
+
     uint8_t program[] = {
         LDA, 0x00, 0x20,
         LDB, 0x00, 0x21,
         ADD,
         STA, 0x00, 0x22,
-        LDB, 0x00, 0x22,
-        ADD,
-        STA, 0x00, 0x23,
-        JMP, 0x00, 0x00,
         HLT
     };
 
     rom_load(&ram, program, sizeof(program));
-    ram_write(&ram, 0x0020, 42);
-    ram_write(&ram, 0x0021, 12);
+    ram_write(&ram, 0x0020, 255);
+    ram_write(&ram, 0x0021, 1);
 
     while (!cpu.halted) {
         cpu_step(&cpu, &ram);
     }
 
-    printf("Result at 0x0013: %d\n", ram_read(&ram, 0x0013));
+    printf("Result at 0x0022: %d\n", ram_read(&ram, 0x0022));
     return 0;
 }
