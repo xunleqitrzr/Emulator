@@ -1,5 +1,7 @@
 #include "ram.h"
 
+#include <stdbool.h>
+
 void ram_init(RAM* ram) {
     for (int i = 0; i < RAM_SIZE; i++) {
         ram->memory[i] = 0;

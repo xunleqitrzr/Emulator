@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define RAM_SIZE 65536  // 64 KB RAM
+#define RAM_SIZE 65536  // 64 KiB RAM
 
 typedef struct {
     uint8_t memory[RAM_SIZE];

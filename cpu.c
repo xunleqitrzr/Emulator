@@ -33,12 +33,19 @@ bool register_out_of_bounds(CPU* cpu, uint8_t registers) {
     return false;
 }
 
+// MISC
+size_t get_number_of_registers(CPU* cpu) {
+    const size_t reg_num = sizeof(cpu->registers) / sizeof(cpu->registers[0]);
+    return reg_num;
+}
 
 //CPU
 void cpu_reset(CPU *cpu) {
-    cpu->registers[A] = cpu->registers[B] = 0;
+    for (size_t i = 0; i < get_number_of_registers(cpu); i++) {
+        cpu->registers[i] = 0;
+    }
     cpu->PC = 0x0000;
-    cpu->SP = 0x0000;
+    cpu->SP = RAM_SIZE - 1;     // 0x100 -> but stack grows downwards
     cpu->FLAGS = 0;
     cpu->halted = false;
 }
@@ -96,7 +103,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
             break;
         }
 
-        case ADD: {
+        case ADD: {     // ADD B
             uint8_t reg_from = ram_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -270,6 +277,108 @@ void cpu_step(CPU* cpu, RAM* ram) {
                 cpu->PC += 2;
                 break;
             }
+        }
+
+        case AND: {
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
+            uint8_t reg_from = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
+            if (register_out_of_bounds(cpu, reg_from)) exit(1);
+
+            uint8_t result = cpu->registers[reg_to] & cpu->registers[reg_from];
+            cpu->registers[reg_to] = result;
+
+            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
+            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            break;
+        }
+
+        case OR: {
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
+            uint8_t reg_from = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
+            if (register_out_of_bounds(cpu, reg_from)) exit(1);
+
+            uint8_t result = cpu->registers[reg_to] | cpu->registers[reg_from];
+            cpu->registers[reg_to] = result;
+
+            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
+            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            break;
+        }
+
+        case XOR: {
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
+            uint8_t reg_from = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
+            if (register_out_of_bounds(cpu, reg_from)) exit(1);
+
+            uint8_t result = cpu->registers[reg_to] ^ cpu->registers[reg_from];
+            cpu->registers[reg_to] = result;
+
+            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
+            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            break;
+        }
+
+        case NOT: {
+            uint8_t reg_not = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_not)) exit(1);
+
+            uint8_t result = ~cpu->registers[reg_not];
+            cpu->registers[reg_not] = result;
+
+            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
+            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            break;
+        }
+
+        case PUSH: {
+            uint8_t reg_from = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_from)) exit(1);
+
+            uint16_t value = cpu->registers[reg_from];
+            ram_write(ram, --cpu->SP, value);
+            break;
+        }
+
+        case POP: {
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
+
+            uint16_t value = ram_read(ram, cpu->SP++);
+            cpu->registers[reg_to] = value;
+            break;
+        }
+
+        case CALL: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            // save return address: push PC onto stack
+            uint16_t value = cpu->PC;
+            uint8_t valHI = (value >> 8) & 0xFF;
+            uint8_t valLO = value & 0xFF;
+            ram_write(ram, --cpu->SP, valLO);
+            ram_write(ram, --cpu->SP, valHI);
+
+            cpu->PC = addr;
+            break;
+        }
+
+        case RET: {
+            // 16 bit pop
+            uint16_t PC_addr = ram_read(ram, cpu->SP++) << 8;
+            PC_addr |= ram_read(ram, cpu->SP++);
+
+            cpu->PC = PC_addr;
+            break;
         }
 
         case HLT:       // end of program

@@ -10,7 +10,7 @@
 #define FLAG_CARRY 0x02     // bit 1
 
 typedef struct {
-    uint8_t registers[2];   // general purpose registers
+    uint8_t registers[4];   // general purpose registers
     uint16_t PC;            // program counter
     uint16_t SP;            // stack pointer
     uint8_t FLAGS;          // flags register
@@ -19,7 +19,9 @@ typedef struct {
 
 typedef enum {
     A = 0x00,          // A register
-    B = 0x01           // B register
+    B = 0x01,          // B register
+    C = 0x02,          // C register
+    D = 0x03,          // D register
 } Register;
 
 typedef enum {
@@ -43,6 +45,14 @@ typedef enum {
     JNC = 0x11,         // jump if carry flag is not set
     JE  = 0x12,         // jump if equal
     JNE = 0x13,         // jump if not equal
+    AND = 0x14,         // bitwise AND: AND <dest>, <src>
+    OR  = 0x15,         // bitwise OR: OR <dest>, <src>
+    XOR = 0x16,         // bitwise XOR: XOR <dest>, <src>
+    NOT = 0x17,         // bitwise NOT: NOT <src>
+    PUSH = 0x18,        // push onto stack
+    POP = 0x19,         // pop off stack
+    CALL = 0x1A,        // call
+    RET = 0x1B,         // return
     HLT = 0xFF          // halt CPU
 } Instruction;
 
@@ -58,5 +68,8 @@ void update_flags(CPU* cpu, uint16_t result);
 
 // REGISTER BOUNDS CHECK
 bool register_out_of_bounds(CPU* cpu, uint8_t registers);
+
+// MISC
+size_t get_number_of_registers(CPU* cpu);
 
 #endif //CPU_H
