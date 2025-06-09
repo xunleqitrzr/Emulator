@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "cpu.h"
 #include "ram.h"
@@ -13,7 +12,14 @@ int main(void) {
     ram_init(&ram);
 
     uint8_t program[] = {
-        LDI, 2,
+        LDI, 5,
+        MOV, B, A,
+        LDI, 0,
+        INC,
+        PUSH, A,
+        CMP, B, A,
+        JE, 0x00, 0x13,
+        JMP, 0x00, 0x07,
         HLT
     };
 
@@ -23,7 +29,6 @@ int main(void) {
         cpu_step(&cpu, &ram);
     }
 
-    printf("10 divided by 2 is: %d\n", ram_read(&ram, 0x0008));
-
+    print_state(&cpu);
     return 0;
 }

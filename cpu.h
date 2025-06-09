@@ -72,13 +72,16 @@ void clear_flag(uint8_t* flags, uint8_t mask);
 bool is_flag_set(uint8_t flags, uint8_t mask);
 
 // FLAG HELPER FUNCTIONS
-#define SET_FLAG_IF(cond, flag) \
-do { if (cond) set_flag(cpu, flag); else clear_flag(cpu, flag); } while (0)
+#define SET_FLAG_IF(cpu, condition, flag) \
+    do { \
+        if (condition) set_flag(&cpu->FLAGS, flag); \
+        else clear_flag(&cpu->FLAGS, flag); \
+    } while (0)
 
-void set_flags_add(CPU* cpu, uint8_t reg1, uint8_t reg2, uint8_t result);
-void set_flags_sub(CPU* cpu, uint8_t reg1, uint8_t reg2, uint8_t result);
-void set_flags_inc(CPU* cpu, uint8_t original, uint8_t result);
-void set_flags_dec(CPU* cpu, uint8_t original, uint8_t result);
+void set_flags_add(CPU* cpu, uint8_t reg1, uint8_t reg2, uint16_t result);
+void set_flags_sub(CPU* cpu, uint8_t reg1, uint8_t reg2, uint16_t result);
+void set_flags_inc(CPU* cpu, uint8_t original, uint16_t result);
+void set_flags_dec(CPU* cpu, uint8_t original, uint16_t result);
 void set_flags_bitwise_ops(CPU* cpu, uint8_t result);
 void set_flags_mul(CPU* cpu, uint16_t result);
 
@@ -87,5 +90,9 @@ bool register_out_of_bounds(CPU* cpu, uint8_t registers);
 
 // MISC
 size_t get_number_of_registers(CPU* cpu);
+
+// DEBUG
+void print_state(CPU* cpu);
+void print_flags(uint8_t flags);
 
 #endif //CPU_H
