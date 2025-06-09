@@ -22,6 +22,53 @@ void update_flags(CPU* cpu, uint16_t result) {
     else clear_flag(&cpu->FLAGS, FLAG_ZERO);
 }
 
+// FLAG HELPER FUNCTIONS
+void set_flags_add(CPU* cpu, uint8_t reg1, uint8_t reg2, uint8_t result) {
+    SET_FLAG_IF(result == 0, FLAG_ZERO);
+    SET_FLAG_IF((result & 0x80), FLAG_SIGN);
+    SET_FLAG_IF((uint16_t)reg1 + (uint16_t)reg2 > 0xFF, FLAG_CARRY);
+    SET_FLAG_IF(((reg1 ^ result) & (reg2 ^ result)) & 0x80, FLAG_OVERFLOW);
+}
+
+void set_flags_sub(CPU* cpu, uint8_t reg1, uint8_t reg2, uint8_t result) {
+    SET_FLAG_IF(result == 0, FLAG_ZERO);
+    SET_FLAG_IF((result & 0x80), FLAG_SIGN);
+    SET_FLAG_IF(reg1 < reg2, FLAG_CARRY);
+    SET_FLAG_IF(((reg1 ^ reg2) & (reg1 ^ result)) & 0x80, FLAG_OVERFLOW);
+}
+
+void set_flags_inc(CPU* cpu, uint8_t original, uint8_t result) {
+    SET_FLAG_IF(result == 0, FLAG_ZERO);
+    SET_FLAG_IF((result & 0x80), FLAG_SIGN);
+    SET_FLAG_IF(original == 0x7F, FLAG_OVERFLOW);
+    // CF unaffected
+}
+
+void set_flags_dec(CPU* cpu, uint8_t original, uint8_t result) {
+    SET_FLAG_IF(result == 0, FLAG_ZERO);
+    SET_FLAG_IF((result & 0x80), FLAG_SIGN);
+    SET_FLAG_IF(original == 0x80, FLAG_OVERFLOW);
+    // CF unaffected
+}
+
+void set_flags_bitwise_ops(CPU* cpu, uint8_t result) {
+    SET_FLAG_IF(result == 0, FLAG_ZERO);
+    SET_FLAG_IF((result & 0x80), FLAG_SIGN);
+    // CF and OF cleared on these instructions on many CPUs
+    clear_flag(&cpu->FLAGS, FLAG_CARRY);
+    clear_flag(&cpu->FLAGS, FLAG_OVERFLOW);
+}
+
+void set_flags_mul(CPU* cpu, uint16_t result) {
+    uint8_t low  = result & 0xFF;
+    uint8_t high = (result >> 8) & 0xFF;
+    SET_FLAG_IF(low == 0, FLAG_ZERO);
+    SET_FLAG_IF(low & 0x80, FLAG_SIGN);
+    // carry if high byte != 0
+    SET_FLAG_IF(high != 0, FLAG_CARRY);
+    clear_flag(&cpu->FLAGS, FLAG_OVERFLOW);
+}
+
 // REGISTER BOUNDS CHECK
 bool register_out_of_bounds(CPU* cpu, uint8_t registers) {
     size_t array_elems = sizeof(cpu->registers) / sizeof(cpu->registers[0]);
@@ -87,10 +134,20 @@ void cpu_step(CPU* cpu, RAM* ram) {
 
         case INC: {      // not updating the carry flag on purpose
             uint16_t result = cpu->registers[A] + 1;
-            cpu->registers[A] = result;
 
+            // Zero
             if (cpu->registers[A] == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
             else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+
+            // Sign
+            if (result & 0x80) set_flag(&cpu->FLAGS, FLAG_SIGN);
+            else clear_flag(&cpu->FLAGS, FLAG_SIGN);
+
+            // Overflow
+            if ((cpu->registers[A] == 0x7F)) set_flag(&cpu->FLAGS, FLAG_OVERFLOW);
+            else clear_flag(&cpu->FLAGS, FLAG_OVERFLOW);
+
+            cpu->registers[A] = result;
             break;
         }
 
@@ -103,57 +160,51 @@ void cpu_step(CPU* cpu, RAM* ram) {
             break;
         }
 
-        case ADD: {     // ADD B
+        case ADD: {     // ADD C, B
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
             uint8_t reg_from = ram_read(ram, cpu->PC++);
 
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t result = cpu->registers[A] + cpu->registers[reg_from];
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint8_t result = a + b;
 
-            if (result > 0xFF) set_flag(&cpu->FLAGS, FLAG_CARRY);
-            else clear_flag(&cpu->FLAGS, FLAG_CARRY);
-
-            cpu->registers[A] = (uint8_t)result;
-
-            if (cpu->registers[A] == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_add(cpu, a, b, result);
+            cpu->registers[reg_to] = result;
             break;
         }
 
-        case SUB: {
+        case SUB: {     // SUB C, B
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
             uint8_t reg_from = ram_read(ram, cpu->PC++);
 
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t result = cpu->registers[A] - cpu->registers[reg_from];
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint8_t result = a - b;
 
-            if (cpu->registers[0] < cpu->registers[reg_from]) { // borrow
-                set_flag(&cpu->FLAGS, FLAG_CARRY);
-            }
-            else clear_flag(&cpu->FLAGS, FLAG_CARRY);
-
-            cpu->registers[A] = (uint8_t)result;
-
-            if (cpu->registers[A] == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_sub(cpu, a, b, result);
+            cpu->registers[reg_to] = result;
             break;
         }
 
-        case MUL: {
+        case MUL: {     // MUL D, B
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
             uint8_t reg_from = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t result = cpu->registers[A] * cpu->registers[B];
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint16_t result = a * b;
 
-            if ((result & 0xFF00) != 0) {
-                set_flag(&cpu->FLAGS, FLAG_CARRY);  // overflow into high byte
-            }
-            else clear_flag(&cpu->FLAGS, FLAG_CARRY);
-
-            cpu->registers[A] = (uint8_t)(result & 0xFF);   // store low byte
-
-            if (cpu->registers[A] == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_mul(cpu, result);
+            cpu->registers[reg_to] = (uint8_t) (result & 0xFF); // store low
             break;
         }
 
@@ -183,14 +234,18 @@ void cpu_step(CPU* cpu, RAM* ram) {
             break;
         }
 
-        case CMP: {     // do not overwrite A
-            uint16_t result = cpu->registers[A] - cpu->registers[B];
+        case CMP: {     // CMP B, D
+            uint8_t reg_to = ram_read(ram, cpu->PC++);
+            uint8_t reg_from = ram_read(ram, cpu->PC++);
 
-            if (result > 0xFF) set_flag(&cpu->FLAGS, FLAG_CARRY);
-            else clear_flag(&cpu->FLAGS, FLAG_CARRY);
+            if (register_out_of_bounds(cpu, reg_to)) exit(1);
+            if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint8_t result = a - b;
+
+            set_flags_sub(cpu, a, b, result);
             break;
         }
 
@@ -279,6 +334,56 @@ void cpu_step(CPU* cpu, RAM* ram) {
             }
         }
 
+        case JL: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
+            bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
+
+            if (sf != of) {
+                cpu->PC = addr;
+            }
+            break;
+        }
+
+        case JG: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
+            bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
+            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
+
+            if (!zf && (sf == of)) {
+                cpu->PC = addr;
+            }
+            break;
+        }
+
+        case JB: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            if (is_flag_set(cpu->FLAGS, FLAG_CARRY)) {
+                cpu->PC = addr;
+            }
+            break;
+        }
+
+        case JA: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            bool cf = is_flag_set(cpu->FLAGS, FLAG_CARRY);
+            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
+
+            if (!cf && !zf) {
+                cpu->PC = addr;
+            }
+            break;
+        }
+
         case AND: {
             uint8_t reg_to = ram_read(ram, cpu->PC++);
             uint8_t reg_from = ram_read(ram, cpu->PC++);
@@ -286,11 +391,12 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint8_t result = cpu->registers[reg_to] & cpu->registers[reg_from];
-            cpu->registers[reg_to] = result;
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint8_t result = a & b;
 
-            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_bitwise_ops(cpu, result);
+            cpu->registers[reg_to] = result;
             break;
         }
 
@@ -301,11 +407,12 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint8_t result = cpu->registers[reg_to] | cpu->registers[reg_from];
-            cpu->registers[reg_to] = result;
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint8_t result = a | b;
 
-            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_bitwise_ops(cpu, result);
+            cpu->registers[reg_to] = result;
             break;
         }
 
@@ -316,11 +423,12 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint8_t result = cpu->registers[reg_to] ^ cpu->registers[reg_from];
-            cpu->registers[reg_to] = result;
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint8_t result = a ^ b;
 
-            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_bitwise_ops(cpu, result);
+            cpu->registers[reg_to] = result;
             break;
         }
 
@@ -330,10 +438,9 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_not)) exit(1);
 
             uint8_t result = ~cpu->registers[reg_not];
-            cpu->registers[reg_not] = result;
 
-            if (result == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
-            else clear_flag(&cpu->FLAGS, FLAG_ZERO);
+            set_flags_bitwise_ops(cpu, result);
+            cpu->registers[reg_not] = result;
             break;
         }
 

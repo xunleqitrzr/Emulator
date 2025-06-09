@@ -6,8 +6,10 @@
 #include "ram.h"
 
 // flags
-#define FLAG_ZERO  0x01     // bit 0
-#define FLAG_CARRY 0x02     // bit 1
+#define FLAG_ZERO       0x01        // bit 0 --> 0001
+#define FLAG_CARRY      0x02        // bit 1 --> 0010
+#define FLAG_SIGN       0x04        // bit 2 --> 0100
+#define FLAG_OVERFLOW   0x08        // bit 3 --> 1000
 
 typedef struct {
     uint8_t registers[4];   // general purpose registers
@@ -45,14 +47,18 @@ typedef enum {
     JNC = 0x11,         // jump if carry flag is not set
     JE  = 0x12,         // jump if equal
     JNE = 0x13,         // jump if not equal
-    AND = 0x14,         // bitwise AND: AND <dest>, <src>
-    OR  = 0x15,         // bitwise OR: OR <dest>, <src>
-    XOR = 0x16,         // bitwise XOR: XOR <dest>, <src>
-    NOT = 0x17,         // bitwise NOT: NOT <src>
-    PUSH = 0x18,        // push onto stack
-    POP = 0x19,         // pop off stack
-    CALL = 0x1A,        // call
-    RET = 0x1B,         // return
+    JL  = 0x14,         // jump if less (signed)
+    JG  = 0x15,         // jump if greater (signed)
+    JB  = 0x16,         // jump if below (unsigned)
+    JA  = 0x17,         // jump if above (unsigned)
+    AND = 0x18,         // bitwise AND: AND <dest>, <src>
+    OR  = 0x19,         // bitwise OR: OR <dest>, <src>
+    XOR = 0x1A,         // bitwise XOR: XOR <dest>, <src>
+    NOT = 0x1B,         // bitwise NOT: NOT <src>
+    PUSH = 0x1C,        // push onto stack
+    POP = 0x1D,         // pop off stack
+    CALL = 0x1E,        // call <addr>
+    RET = 0x1F,         // return
     HLT = 0xFF          // halt CPU
 } Instruction;
 
@@ -64,7 +70,17 @@ void cpu_step(CPU* cpu, RAM* ram);
 void set_flag(uint8_t* flags, uint8_t mask);
 void clear_flag(uint8_t* flags, uint8_t mask);
 bool is_flag_set(uint8_t flags, uint8_t mask);
-void update_flags(CPU* cpu, uint16_t result);
+
+// FLAG HELPER FUNCTIONS
+#define SET_FLAG_IF(cond, flag) \
+do { if (cond) set_flag(cpu, flag); else clear_flag(cpu, flag); } while (0)
+
+void set_flags_add(CPU* cpu, uint8_t reg1, uint8_t reg2, uint8_t result);
+void set_flags_sub(CPU* cpu, uint8_t reg1, uint8_t reg2, uint8_t result);
+void set_flags_inc(CPU* cpu, uint8_t original, uint8_t result);
+void set_flags_dec(CPU* cpu, uint8_t original, uint8_t result);
+void set_flags_bitwise_ops(CPU* cpu, uint8_t result);
+void set_flags_mul(CPU* cpu, uint16_t result);
 
 // REGISTER BOUNDS CHECK
 bool register_out_of_bounds(CPU* cpu, uint8_t registers);

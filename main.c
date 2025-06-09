@@ -13,12 +13,7 @@ int main(void) {
     ram_init(&ram);
 
     uint8_t program[] = {
-        LDI, 1,
-        PUSH, A,
-        CALL, 0x00, 0x08,
-        HLT,
-        NOP, NOP,
-        RET,
+        LDI, 2,
         HLT
     };
 
@@ -27,6 +22,8 @@ int main(void) {
     while (!cpu.halted) {
         cpu_step(&cpu, &ram);
     }
+
+    printf("10 divided by 2 is: %d\n", ram_read(&ram, 0x0008));
 
     return 0;
 }
