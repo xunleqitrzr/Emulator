@@ -10,11 +10,13 @@ else()
     set(EXE_SUFFIX "${CMAKE_BUILD_TYPE}")
 endif()
 
+# set C standard for C files
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD_REQUIRED True)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)
+
+#set C++ standard for C++ files
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug or Release" FORCE)
@@ -30,20 +32,24 @@ endif()
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
 
+# --- Target 1: The Emulator (C)
+# Defining C sources and headers
 set(SOURCES
-        main.c
-        cpu.c
-        ram.c
-        bus.c
-        rom.c
+        src/main.c
+        src/cpu.c
+        src/ram.c
+        src/bus.c
+        src/rom.c
 )
 
 set(HEADERS
-        cpu.h
-        ram.h
-        bus.h
-        rom.h
+        src/cpu.h
+        src/ram.h
+        src/bus.h
+        src/rom.h
 )
 
+# build Emulator from C files
 add_executable(Emulator ${SOURCES} ${HEADERS})
+# set output name to "EmulatorDebug" or "EmulatorRelease"
 set_target_properties(Emulator PROPERTIES OUTPUT_NAME "Emulator${EXE_SUFFIX}")

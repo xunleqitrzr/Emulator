@@ -1,8 +1,40 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "cpu.h"
 #include "ram.h"
 #include "rom.h"
+
+// load a binary file into RAM
+void load_program_from_file(RAM* ram, const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) {
+        fprintf(stderr, "Error: Could not open program file %s\n", filename);
+        exit(1);
+    }
+
+    // seek to the end of the file to find its size
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);  // back to beginning
+
+    // read the entire file into a temporary buffer
+    unsigned char* buffer = (unsigned char*)malloc(fsize);
+    if (!buffer) {
+        fprintf(stderr, "Error: Could not allocate program memory\n");
+        fclose(f);
+        exit(1);
+    }
+
+    fread(buffer, fsize, 1, f);
+    fclose(f);
+
+    // copy program from buffer to emulator ROM
+    rom_load(ram, buffer, (uint16_t) fsize);
+
+    // clean up
+    free(buffer);
+}
 
 int main(void) {
     CPU cpu;
@@ -11,19 +43,9 @@ int main(void) {
     cpu_reset(&cpu);
     ram_init(&ram);
 
-    uint8_t program[] = {
-        LDI, 5,
-        MOV, B, A,
-        LDI, 0,
-        INC,
-        PUSH, A,
-        CMP, B, A,
-        JE, 0x00, 0x13,
-        JMP, 0x00, 0x07,
-        HLT
-    };
-
-    rom_load(&ram, program, sizeof(program));
+    printf("Loading \"program.bin\" into memory...\n");
+    load_program_from_file(&ram, "program.bin");
+    printf("Load complete. Starting CPU...\n");
 
     while (!cpu.halted) {
         cpu_step(&cpu, &ram);
