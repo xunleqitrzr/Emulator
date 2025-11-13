@@ -8,7 +8,10 @@ default: release
 
 .PHONY: all clean release debug build assembler
 
-all: release
+all:
+	$(MAKE) release
+	$(MAKE) debug
+	$(MAKE) assembler
 
 release:
 	$(MAKE) BUILD_TYPE=Release BUILD_DIR=$(BUILD_DIR_BASE)/Release build
