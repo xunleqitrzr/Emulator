@@ -32,6 +32,27 @@
 
 ![Picture of the design](doc/arch.svg)
 
+### Building and Running the emulator
+Everything _should_ work out of the box.
+
+Execute
+```bash
+  make all
+```
+inside the project root directory to build the emulator with Release **and** Debug configurations.<br>
+The build files are inside the `build/` directory. It also contains an `easm` executable 
+which<br>is an assembler used to assemble programs to machine code instructions from a given<br>
+assembly file.
+
+Assemble a program with
+```bash
+  ./easm <input.asm> <output.bin>
+```
+and execute it with
+```bash
+  ./EmulatorRelease <program.bin>
+```
+
 ### Important:
 There are no security implementations yet. <br>
 You are able to modify the code from within the code itself. <br>
