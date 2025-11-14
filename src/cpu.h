@@ -60,6 +60,8 @@ typedef enum {
     POP = 0x1D,         // pop off stack
     CALL = 0x1E,        // call <addr>
     RET = 0x1F,         // return
+    JLE = 0x20,         // jump if less or equal
+    JGE = 0x21,         // jump if greater or equal
     HLT = 0xFF          // halt CPU
 } Instruction;
 

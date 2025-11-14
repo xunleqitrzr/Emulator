@@ -63,11 +63,13 @@ void set_flags_bitwise_ops(CPU* cpu, uint8_t result) {
 void set_flags_mul(CPU* cpu, uint16_t result) {
     uint8_t low  = result & 0xFF;
     uint8_t high = (result >> 8) & 0xFF;
+
     SET_FLAG_IF(cpu, low == 0, FLAG_ZERO);
-    // carry if high byte != 0
-    SET_FLAG_IF(cpu, high != 0, FLAG_CARRY);
     SET_FLAG_IF(cpu, low & 0x80, FLAG_SIGN);
-    clear_flag(&cpu->FLAGS, FLAG_OVERFLOW);
+
+    bool overflow = (high != 0);
+    SET_FLAG_IF(cpu, overflow, FLAG_CARRY);
+    SET_FLAG_IF(cpu, overflow, FLAG_OVERFLOW);
 }
 
 // REGISTER BOUNDS CHECK
@@ -358,6 +360,20 @@ void cpu_step(CPU* cpu, RAM* ram) {
             break;
         }
 
+        case JLE: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
+            bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
+            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
+
+            if (zf || (sf != of)) {
+                cpu->PC = addr;
+            }
+            break;
+        }
+
         case JG: {
             uint16_t addr = ram_read(ram, cpu->PC++) << 8;
             addr |= ram_read(ram, cpu->PC++);
@@ -367,6 +383,20 @@ void cpu_step(CPU* cpu, RAM* ram) {
             bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
 
             if (!zf && (sf == of)) {
+                cpu->PC = addr;
+            }
+            break;
+        }
+
+        case JGE: {
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
+            addr |= ram_read(ram, cpu->PC++);
+
+            bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
+            bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
+            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
+
+            if (zf || (sf == of)) {
                 cpu->PC = addr;
             }
             break;
@@ -460,7 +490,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
 
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t value = cpu->registers[reg_from];
+            uint8_t value = cpu->registers[reg_from];
             ram_write(ram, --cpu->SP, value);
             break;
         }
@@ -470,7 +500,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
 
-            uint16_t value = ram_read(ram, cpu->SP++);
+            uint8_t value = ram_read(ram, cpu->SP++);
             cpu->registers[reg_to] = value;
             break;
         }
