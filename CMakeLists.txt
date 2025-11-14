@@ -40,6 +40,7 @@ set(SOURCES
         src/ram.c
         src/bus.c
         src/rom.c
+        src/fs/fs.c
 )
 
 set(HEADERS
@@ -47,6 +48,7 @@ set(HEADERS
         src/ram.h
         src/bus.h
         src/rom.h
+        src/fs/fs.h
 )
 
 # build Emulator from C files
