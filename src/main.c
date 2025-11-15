@@ -1,5 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "cpu.h"
 #include "fs/fs.h"
+#include "security/security.h"
 
 
 int main(int argc, char* argv[]) {
@@ -15,9 +18,11 @@ int main(int argc, char* argv[]) {
 
     cpu_reset(&cpu);
     ram_init(&ram);
+    security_init(&cpu);
 
     printf("Loading \"%s\" into memory...\n", file_name);
-    load_program_from_file(&ram, file_name);
+    const uint16_t size = load_program_from_file(&ram, file_name);
+    set_usable_offset(size);
     printf("Load complete. Starting CPU...\n");
 
     while (!cpu.halted) {

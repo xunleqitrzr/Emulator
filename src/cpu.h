@@ -1,10 +1,10 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "ram.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "ram.h"
 
 // flags
 #define FLAG_ZERO       0x01        // bit 0 --> 0001
@@ -12,7 +12,7 @@
 #define FLAG_SIGN       0x04        // bit 2 --> 0100
 #define FLAG_OVERFLOW   0x08        // bit 3 --> 1000
 
-typedef struct {
+typedef struct CPU_{
     uint8_t registers[4];   // general purpose registers
     uint16_t PC;            // program counter
     uint16_t SP;            // stack pointer
@@ -93,6 +93,7 @@ bool register_out_of_bounds(CPU* cpu, uint8_t registers);
 
 // MISC
 size_t get_number_of_registers(CPU* cpu);
+uint16_t get_stack_pointer(CPU* cpu);
 
 // DEBUG
 void print_state(CPU* cpu);

@@ -1,5 +1,6 @@
 #include "cpu.h"
 
+#include "ram.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -87,6 +88,10 @@ bool register_out_of_bounds(CPU* cpu, uint8_t registers) {
 size_t get_number_of_registers(CPU* cpu) {
     const size_t reg_num = sizeof(cpu->registers) / sizeof(cpu->registers[0]);
     return reg_num;
+}
+
+uint16_t get_stack_pointer(CPU* cpu) {
+    return cpu->SP;
 }
 
 // DEBUG

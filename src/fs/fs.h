@@ -1,6 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef FS_H
+#define FS_H
+
 #include "../ram.h"
 #include "../rom.h"
 
-void load_program_from_file(RAM* ram, const char* filename);
+uint16_t load_program_from_file(RAM* ram, const char* filename);
+
+#endif
