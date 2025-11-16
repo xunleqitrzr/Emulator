@@ -13,7 +13,7 @@ uint16_t load_program_from_file(RAM* ram, const char* filename) {
     // seek to the end of the file to find its size
     fseek(f, 0, SEEK_END);
     long fsize_long = ftell(f);
-    if ((fsize_long < 0) || (fsize_long > (long) UINT16_MAX)) exit(1);
+    if ((fsize_long < 0) || (fsize_long >= (long) UINT16_MAX)) exit(1);
     uint16_t fsize = (uint16_t) fsize_long;
     fseek(f, 0, SEEK_SET);  // back to beginning
 

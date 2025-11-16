@@ -12,7 +12,7 @@
 #define FLAG_SIGN       0x04        // bit 2 --> 0100
 #define FLAG_OVERFLOW   0x08        // bit 3 --> 1000
 
-typedef struct CPU_{
+typedef struct {
     uint8_t registers[4];   // general purpose registers
     uint16_t PC;            // program counter
     uint16_t SP;            // stack pointer
