@@ -31,7 +31,8 @@ std::map<std::string, uint8_t> OPCODES = {
     {"JL",  0x14}, {"JG",  0x15}, {"JB",  0x16}, {"JA",  0x17},
     {"AND", 0x18}, {"OR",  0x19}, {"XOR", 0x1A}, {"NOT", 0x1B},
     {"PUSH", 0x1C}, {"POP", 0x1D}, {"CALL", 0x1E}, {"RET", 0x1F},
-    {"JLE", 0x20}, {"JGE", 0x21}, {"HLT", 0xFF}
+    {"JLE", 0x20}, {"JGE", 0x21}, {"SHL", 0x22}, {"SHR", 0x23},
+    {"ROL", 0x24}, {"ROR", 0x25}, {"HLT", 0xFF}
 };
 
 // Map register names (text) to their byte value
@@ -172,8 +173,10 @@ int main(int argc, char* argv[]) {
                 current_address += 1;
             }
             // 2-byte instructions (LDI, PUSH, POP, NOT)
-            else if (mnemonic == "LDI" || mnemonic == "PUSH" ||
-                     mnemonic == "POP" || mnemonic == "NOT") {
+            else if ((mnemonic == "LDI") || (mnemonic == "PUSH") ||
+                     (mnemonic == "POP") || (mnemonic == "NOT") ||
+                     (mnemonic == "SHL") || (mnemonic == "SHR") ||
+                     (mnemonic == "ROL") || (mnemonic == "ROR")) {
                 current_address += 2;
             }
             // 3-byte instructions (everything else)
@@ -223,7 +226,8 @@ int main(int argc, char* argv[]) {
                 uint16_t value = parse_operand(tokens.at(1), labels);
                 machine_code.push_back((uint8_t)value);
             }
-            else if (mnemonic == "PUSH" || mnemonic == "POP" || mnemonic == "NOT") {
+            else if (mnemonic == "PUSH" || mnemonic == "POP" || mnemonic == "NOT" ||
+                     mnemonic == "SHL" || mnemonic == "SHR" || mnemonic == "ROL" || mnemonic == "ROR") {
                 // PUSH <register>
                 machine_code.push_back(REGISTERS.at(to_upper(tokens.at(1))));
             }

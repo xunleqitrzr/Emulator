@@ -73,6 +73,18 @@ void set_flags_mul(CPU* cpu, uint16_t result) {
     SET_FLAG_IF(cpu, overflow, FLAG_OVERFLOW);
 }
 
+void set_flags_shift_left(CPU* cpu, uint8_t original, uint8_t result) {
+    SET_FLAG_IF(cpu, original & 0x80, FLAG_CARRY);
+    SET_FLAG_IF(cpu, result == 0, FLAG_ZERO);
+    SET_FLAG_IF(cpu, result & 0x80, FLAG_SIGN);
+}
+void set_flags_shift_right(CPU* cpu, uint8_t original, uint8_t result) {
+    SET_FLAG_IF(cpu, original & 0x01, FLAG_CARRY);
+    SET_FLAG_IF(cpu, result == 0, FLAG_ZERO);
+    SET_FLAG_IF(cpu, result & 0x80, FLAG_SIGN);
+    // no overflow, SHR is logical
+}
+
 // REGISTER BOUNDS CHECK
 bool register_out_of_bounds(CPU* cpu, uint8_t registers) {
     size_t array_elems = sizeof(cpu->registers) / sizeof(cpu->registers[0]);
@@ -531,6 +543,54 @@ void cpu_step(CPU* cpu, RAM* ram) {
             PC_addr |= ram_read(ram, cpu->SP++);
 
             cpu->PC = PC_addr;
+            break;
+        }
+
+        case SHL: {     // SHL <register>
+            uint8_t reg_shl = ram_read(ram, cpu->PC++);
+            uint8_t original = cpu->registers[reg_shl];
+            uint8_t result = original << 1;
+            cpu->registers[reg_shl] = result;
+
+            // flag logic
+            set_flags_shift_left(cpu, original, result);
+            SET_FLAG_IF(cpu, result & 0x80, FLAG_OVERFLOW);
+            break;
+        }
+
+        case SHR: {     // SHR <register>
+            uint8_t reg_shr = ram_read(ram, cpu->PC++);
+            uint8_t original = cpu->registers[reg_shr];
+            uint8_t result = original >> 1;
+            cpu->registers[reg_shr] = result;
+
+            // flag logic
+            set_flags_shift_right(cpu, original, result);
+            break;
+        }
+
+        case ROL: {     // ROL <register>
+            uint8_t reg_rol = ram_read(ram, cpu->PC++);
+            uint8_t original = cpu->registers[reg_rol];
+            bool old_carry = is_flag_set(cpu->FLAGS, FLAG_CARRY);
+
+            uint8_t result = (original << 1) | (old_carry ? 0x01 : 0x00);
+            cpu->registers[reg_rol] = result;
+
+            set_flags_shift_left(cpu, original, result);
+            break;
+        }
+
+        case ROR: {     // ROR <register>
+            uint8_t reg_ror = ram_read(ram, cpu->PC++);
+            uint8_t original = cpu->registers[reg_ror];
+            bool old_carry = is_flag_set(cpu->FLAGS, FLAG_CARRY);
+
+            uint8_t result = (original >> 1) | (old_carry ? 0x80 : 0x00);
+            cpu->registers[reg_ror] = result;
+
+            // flag logic
+            set_flags_shift_right(cpu, original, result);
             break;
         }
 

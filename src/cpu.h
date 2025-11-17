@@ -62,6 +62,10 @@ typedef enum {
     RET = 0x1F,         // return
     JLE = 0x20,         // jump if less or equal
     JGE = 0x21,         // jump if greater or equal
+    SHL = 0x22,         // shift left <register>
+    SHR = 0x23,         // shift right <register>
+    ROL = 0x24,         // rotate left <register>
+    ROR = 0x25,         // rotate right <register>
     HLT = 0xFF          // halt CPU
 } Instruction;
 
@@ -87,6 +91,8 @@ void set_flags_inc(CPU* cpu, uint8_t original, uint16_t result);
 void set_flags_dec(CPU* cpu, uint8_t original, uint16_t result);
 void set_flags_bitwise_ops(CPU* cpu, uint8_t result);
 void set_flags_mul(CPU* cpu, uint16_t result);
+void set_flags_shift_left(CPU* cpu, uint8_t original, uint8_t result);
+void set_flags_shift_right(CPU* cpu, uint8_t original, uint8_t result);
 
 // REGISTER BOUNDS CHECK
 bool register_out_of_bounds(CPU* cpu, uint8_t registers);
