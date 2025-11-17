@@ -7,7 +7,7 @@
   - with variable amounts of registers
   - smaller instruction set than MISC
   - fully functioning flag logic 
-  - NO support for negative numbers
+  - negative number support during comparisons
 
 
 - variable size RAM:
@@ -35,8 +35,10 @@
 ### Building and Running the emulator
 Everything _should_ work out of the box.
 
+**For UNIX-based systems:**<br>
 Execute
 ```bash
+  git clone https://github.com/xunleqitrzr/Emulator.git
   make all
 ```
 inside the project root directory to build the emulator with Release **and** Debug configurations.<br>
@@ -53,7 +55,29 @@ and execute it with
   ./EmulatorRelease <program.bin>
 ```
 
+**For Windows systems:**<br>
+_Prerequisites_:
+- Visual Studio Version 17 (e.g. 2022)
+- git
+
+_Procedure_:
+1. Open the **"Developer Command Prompt for VS"**
+2. clone the repository
+    ```bash
+    git clone https://github.com/xunleqitrzr/Emulator.git
+    ```
+3. navigate into the repository directory
+4. Build with MSBuild:
+   ```bash
+   cmake -B build -G "Visual Studio 17 2022"
+   cmake --build build --config Debug          # for Debug builds 
+   cmake --build build --config Release        # for Release builds
+   ```
+5. Build with Visual Studio:
+   1. open the solution file `Emulator.sln` inside `build/` and build with Visual Studio
+6. (for both options:) the binaries are inside `build/<configuration>`, either `Debug` or `Release`
+   
+
 ### Important:
-There are no security implementations yet. <br>
-You are able to modify the code from within the code itself. <br>
-This may sound stupid, but it is a design choice, giving developers the <br> amount of freedom and control they need.
+There are some very simple security implementations.<br>
+It is no longer possible to overwrite the program from within the program itself.
