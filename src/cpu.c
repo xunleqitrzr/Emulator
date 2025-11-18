@@ -140,7 +140,7 @@ void cpu_reset(CPU *cpu) {
         cpu->registers[i] = 0;
     }
     cpu->PC = 0x0000;
-    cpu->SP = RAM_SIZE - 1;     // 0x100 -> but stack grows downwards
+    cpu->SP = RAM_SIZE - 1;     // 0xFFFF
     cpu->FLAGS = 0;
     cpu->halted = false;
 }
@@ -181,20 +181,28 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case INC: {      // not updating the carry flag on purpose
-            uint16_t result = cpu->registers[A] + 1;
-            uint8_t original = cpu->registers[A];
+            uint8_t reg_inc = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_inc)) exit(1);
+
+            uint16_t original = cpu->registers[reg_inc];
+            uint16_t result = original + 1;
 
             set_flags_inc(cpu, original, result);
-            cpu->registers[A] = result;
+            cpu->registers[reg_inc] = (uint8_t) result;
             break;
         }
 
         case DEC: {      // not updating the carry flag on purpose
-            uint16_t result = cpu->registers[A] - 1;
-            uint8_t original = cpu->registers[A];
+            uint8_t reg_dec = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_dec)) exit(1);
+
+            uint16_t original = cpu->registers[reg_dec];
+            uint16_t result = original - 1;
 
             set_flags_dec(cpu, original, result);
-            cpu->registers[A] = result;
+            cpu->registers[reg_dec] = (uint8_t) result;
             break;
         }
 
@@ -205,9 +213,9 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t a = (uint16_t)cpu->registers[reg_to];
-            uint16_t b = (uint16_t)cpu->registers[reg_from];
-            uint16_t result = a + b;
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint16_t result = (uint16_t)a + (uint16_t)b;
 
             set_flags_add(cpu, a, b, result);
             cpu->registers[reg_to] = (uint8_t)result;
@@ -221,9 +229,9 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t a = (uint16_t)cpu->registers[reg_to];
-            uint16_t b = (uint16_t)cpu->registers[reg_from];
-            uint16_t result = a - b;
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint16_t result = (uint16_t)a - (uint16_t)b;
 
             set_flags_sub(cpu, a, b, result);
             cpu->registers[reg_to] = (uint8_t)result;
@@ -279,166 +287,99 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            uint16_t a = (uint16_t)cpu->registers[reg_to];
-            uint16_t b = (uint16_t)cpu->registers[reg_from];
-            uint16_t result = a - b;
+            uint8_t a = cpu->registers[reg_to];
+            uint8_t b = cpu->registers[reg_from];
+            uint16_t result = (uint16_t)a - (uint16_t)b;
 
             set_flags_sub(cpu, a, b, result);
             break;
         }
 
+        #define JUMP_IF(condition) \
+            uint16_t addr = ram_read(ram, cpu->PC++) << 8; \
+            addr |= ram_read(ram, cpu->PC++); \
+            if (condition) cpu->PC = addr
+
         case JMP: {     // unconditional jump
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-            cpu->PC = addr;
+            JUMP_IF(true);
             break;
         }
 
         case JZ: {      // jump if zero
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
-            if (zf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(is_flag_set(cpu->FLAGS, FLAG_ZERO));
             break;
         }
 
         case JNZ: {     // jump if not zero
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
-            if (!zf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(!is_flag_set(cpu->FLAGS, FLAG_ZERO));
             break;
         }
 
         case JC: {      // jump if carry flag is set
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            bool cf = is_flag_set(cpu->FLAGS, FLAG_CARRY);
-
-            if (cf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(is_flag_set(cpu->FLAGS, FLAG_CARRY));
             break;
         }
 
         case JNC: {     // jump if carry flat is not set
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            bool cf = is_flag_set(cpu->FLAGS, FLAG_CARRY);
-
-            if (!cf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(!is_flag_set(cpu->FLAGS, FLAG_CARRY));
             break;
         }
 
         case JE: {      // jump if equal (CMP)
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
-
-            if (zf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(is_flag_set(cpu->FLAGS, FLAG_ZERO));
             break;
         }
 
         case JNE: {     // jump if not equal (CMP)
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
-
-            if (!zf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(!is_flag_set(cpu->FLAGS, FLAG_ZERO));
             break;
         }
 
         case JL: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
+            // for readability
             bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
             bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
 
-            if (sf != of) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(sf != of);
             break;
         }
 
         case JLE: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
             bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
             bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
             bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
 
-            if (zf || (sf != of)) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(zf || (sf != of));
             break;
         }
 
         case JG: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
             bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
             bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
             bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
 
-            if (!zf && (sf == of)) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(!zf && (sf == of));
             break;
         }
 
         case JGE: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
             bool sf = is_flag_set(cpu->FLAGS, FLAG_SIGN);
             bool of = is_flag_set(cpu->FLAGS, FLAG_OVERFLOW);
-            bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
 
-            if (zf || (sf == of)) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(sf == of);
             break;
         }
 
         case JB: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
-            if (is_flag_set(cpu->FLAGS, FLAG_CARRY)) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(is_flag_set(cpu->FLAGS, FLAG_CARRY));
             break;
         }
 
         case JA: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-
             bool cf = is_flag_set(cpu->FLAGS, FLAG_CARRY);
             bool zf = is_flag_set(cpu->FLAGS, FLAG_ZERO);
 
-            if (!cf && !zf) {
-                cpu->PC = addr;
-            }
+            JUMP_IF(!cf && !zf);
             break;
         }
 
@@ -548,49 +489,85 @@ void cpu_step(CPU* cpu, RAM* ram) {
 
         case SHL: {     // SHL <register>
             uint8_t reg_shl = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_shl)) exit(1);
+
             uint8_t original = cpu->registers[reg_shl];
             uint8_t result = original << 1;
-            cpu->registers[reg_shl] = result;
 
             // flag logic
             set_flags_shift_left(cpu, original, result);
             SET_FLAG_IF(cpu, result & 0x80, FLAG_OVERFLOW);
+            cpu->registers[reg_shl] = result;
             break;
         }
 
         case SHR: {     // SHR <register>
             uint8_t reg_shr = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_shr)) exit(1);
+
             uint8_t original = cpu->registers[reg_shr];
             uint8_t result = original >> 1;
-            cpu->registers[reg_shr] = result;
 
             // flag logic
             set_flags_shift_right(cpu, original, result);
+            cpu->registers[reg_shr] = result;
             break;
         }
 
         case ROL: {     // ROL <register>
             uint8_t reg_rol = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_rol)) exit(1);
+
             uint8_t original = cpu->registers[reg_rol];
             bool old_carry = is_flag_set(cpu->FLAGS, FLAG_CARRY);
 
             uint8_t result = (original << 1) | (old_carry ? 0x01 : 0x00);
-            cpu->registers[reg_rol] = result;
 
             set_flags_shift_left(cpu, original, result);
+            cpu->registers[reg_rol] = result;
             break;
         }
 
         case ROR: {     // ROR <register>
             uint8_t reg_ror = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_ror)) exit(1);
+
             uint8_t original = cpu->registers[reg_ror];
             bool old_carry = is_flag_set(cpu->FLAGS, FLAG_CARRY);
 
             uint8_t result = (original >> 1) | (old_carry ? 0x80 : 0x00);
-            cpu->registers[reg_ror] = result;
 
             // flag logic
             set_flags_shift_right(cpu, original, result);
+            cpu->registers[reg_ror] = result;
+            break;
+        }
+
+        case LDA_IDX: {     // 4 byte: [OPCODE] [ADDR_HI] [ADD_LO] [REG]
+            uint16_t addr = ram_read(ram, cpu->PC++);       // read three bytes
+            addr |= ram_read(ram, cpu->PC++);
+            uint8_t reg_idx = ram_read(ram, cpu->PC++);     // this one is the index register
+
+            if (register_out_of_bounds(cpu, reg_idx)) exit(1);
+
+            uint16_t eff_addr = addr + cpu->registers[reg_idx];     // calculate effective address in memory
+            cpu->registers[A] = ram_read(ram, eff_addr);            // read from that memory
+            break;
+        }
+
+        case STA_IDX: {     // 4 byte: [OPCODE] [ADDR_HI] [ADD_LO] [REG]
+            uint16_t addr = ram_read(ram, cpu->PC++);
+            addr |= ram_read(ram, cpu->PC++);
+            uint8_t reg_idx = ram_read(ram, cpu->PC++);
+
+            if (register_out_of_bounds(cpu, reg_idx)) exit(1);
+
+            uint16_t eff_addr = addr + cpu->registers[reg_idx];
+            ram_write(ram, eff_addr, cpu->registers[A]);
             break;
         }
 
@@ -599,6 +576,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
             break;
 
         default:
+            fprintf(stderr, "Unknown opcode: 0x%02X\n", opcode);
             cpu->halted = true;
             break;
 

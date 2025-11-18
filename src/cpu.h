@@ -52,20 +52,22 @@ typedef enum {
     JG  = 0x15,         // jump if greater (signed)
     JB  = 0x16,         // jump if below (unsigned)
     JA  = 0x17,         // jump if above (unsigned)
-    AND = 0x18,         // bitwise AND: AND <dest>, <src>
-    OR  = 0x19,         // bitwise OR: OR <dest>, <src>
-    XOR = 0x1A,         // bitwise XOR: XOR <dest>, <src>
-    NOT = 0x1B,         // bitwise NOT: NOT <src>
-    PUSH = 0x1C,        // push onto stack
-    POP = 0x1D,         // pop off stack
-    CALL = 0x1E,        // call <addr>
-    RET = 0x1F,         // return
-    JLE = 0x20,         // jump if less or equal
-    JGE = 0x21,         // jump if greater or equal
+    JLE = 0x18,         // jump if less or equal
+    JGE = 0x19,         // jump if greater or equal
+    AND = 0x1A,         // bitwise AND: AND <dest>, <src>
+    OR  = 0x1B,         // bitwise OR: OR <dest>, <src>
+    XOR = 0x1C,         // bitwise XOR: XOR <dest>, <src>
+    NOT = 0x1D,         // bitwise NOT: NOT <src>
+    PUSH = 0x1E,        // push onto stack
+    POP = 0x1F,         // pop off stack
+    CALL = 0x20,        // call <addr>
+    RET = 0x21,         // return
     SHL = 0x22,         // shift left <register>
     SHR = 0x23,         // shift right <register>
     ROL = 0x24,         // rotate left <register>
     ROR = 0x25,         // rotate right <register>
+    LDA_IDX = 0x26,     // load A, indexed (LDA <addr>, <reg>)
+    STA_IDX = 0x27,     // store A, indexed (STA <addr>, <reg>)
     HLT = 0xFF          // halt CPU
 } Instruction;
 
