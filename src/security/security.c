@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+#define RESERVED_STACK_SIZE 0x100
+
 static uint16_t usable_offset = 0;
-static uint16_t stack_pointer = 0;
 
 void security_init(CPU* cpu) {
-    stack_pointer = cpu->SP;
+    (void) cpu;
 }
 
 void set_usable_offset(uint16_t program_size) {
@@ -18,17 +19,14 @@ uint16_t get_usable_offset() {
     return usable_offset;
 }
 
-uint16_t get_sp() {
-    return stack_pointer;
-}
-
 void check_ram_write(uint16_t address) {
+    // 1.program protection
     if (address < get_usable_offset()) {
-        fprintf(stderr, "RAM write to protected address %" PRIu16 " (0x%08x) denied\t(PROGRAM OVERWRITE)\n", address, address);
+        fprintf(stderr, "Write denied: Address 0x%04X is inside Program Code.\n", address);
         exit(1);
     }
-    if (address >= get_sp()) {
-        fprintf(stderr, "RAM write to protected address %" PRIu16 " (0x%08x) denied\t(STACK OVERWRITE)\n", address, address);
+    if (address >= (0x10000 - RESERVED_STACK_SIZE)) {
+        fprintf(stderr, "Write denied: Address 0x%04X is inside Reserved Stack Area.\n", address);
         exit(1);
     }
 }

@@ -19,6 +19,7 @@ set(EMU_SOURCES
         src/ram.c
         src/bus.c
         src/rom.c
+        src/gpu.c
         src/fs/fs.c
         src/security/security.c
 )
@@ -28,6 +29,7 @@ set(EMU_HEADERS
         src/ram.h
         src/bus.h
         src/rom.h
+        src/gpu.h
         src/fs/fs.h
         src/security/security.h
 )

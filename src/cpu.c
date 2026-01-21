@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "security/security.h"
+
 // FLAG LOGIC
 void set_flag(uint8_t* flags, uint8_t mask) {
     *flags |= mask;
@@ -275,8 +277,9 @@ void cpu_step(CPU* cpu, RAM* ram) {
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
-            cpu->registers[reg_to] = cpu->registers[reg_from];
-
+            uint8_t value = cpu->registers[reg_from];
+            cpu->registers[reg_to] = value;
+            set_flags_bitwise_ops(cpu, value);
             break;
         }
 
@@ -448,8 +451,15 @@ void cpu_step(CPU* cpu, RAM* ram) {
 
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
+            // safety check: stack overflow
+            // ensure stack does not overwrite program code
+            if ((cpu->SP - 1) <= get_usable_offset()) {
+                fprintf(stderr, "Stack Overflow! SP collided with program at 0x%04X\n", cpu->SP);
+                exit(1);
+            }
+
             uint8_t value = cpu->registers[reg_from];
-            ram_write(ram, --cpu->SP, value);
+            ram_write_stack(ram, --cpu->SP, value);
             break;
         }
 
@@ -467,12 +477,19 @@ void cpu_step(CPU* cpu, RAM* ram) {
             uint16_t addr = ram_read(ram, cpu->PC++) << 8;
             addr |= ram_read(ram, cpu->PC++);
 
+            // safety check: stack overflow
+            // ensure stack does not overwrite program code
+            if ((cpu->SP - 2) <= get_usable_offset()) {
+                fprintf(stderr, "Stack Overflow during CALL at 0x%04X\n", cpu->SP);
+                exit(1);
+            }
+
             // save return address: push PC onto stack
             uint16_t value = cpu->PC;
             uint8_t valHI = (value >> 8) & 0xFF;
             uint8_t valLO = value & 0xFF;
-            ram_write(ram, --cpu->SP, valLO);
-            ram_write(ram, --cpu->SP, valHI);
+            ram_write_stack(ram, --cpu->SP, valLO);
+            ram_write_stack(ram, --cpu->SP, valHI);
 
             cpu->PC = addr;
             break;

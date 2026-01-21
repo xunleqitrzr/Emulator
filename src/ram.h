@@ -14,6 +14,7 @@ typedef struct {
 void ram_init(RAM* ram);                                            // initialize RAM
 uint8_t ram_read(RAM* ram, uint16_t address);                       // RAM-read
 void ram_write(RAM* ram, uint16_t address, uint8_t value);          // RAM-write
+void ram_write_stack(RAM* ram, uint16_t address, uint8_t value);    // RAM-write to the stack, low security checking
 void ram_write_program(RAM* ram, uint16_t address, uint8_t value);  // write the program once, no security checking
 
 #endif //RAM_H
