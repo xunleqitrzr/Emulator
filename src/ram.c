@@ -14,7 +14,6 @@ uint8_t ram_read(RAM* ram, uint16_t address) {
 }
 
 void ram_write(RAM* ram, uint16_t address, uint8_t value) {
-    check_ram_write(address);
     ram->memory[address] = value;
 }
 

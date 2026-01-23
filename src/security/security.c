@@ -19,14 +19,16 @@ uint16_t get_usable_offset() {
     return usable_offset;
 }
 
-void check_ram_write(uint16_t address) {
-    // 1.program protection
+void check_ram_write(uint16_t address, bool is_system) {
+    // 1. program code is under all conditions read-only (even in system mode)
     if (address < get_usable_offset()) {
-        fprintf(stderr, "Write denied: Address 0x%04X is inside Program Code.\n", address);
+        fprintf(stderr, "Critical Error: Stack/Write collision with Program Code at 0x%04X\n", address);
         exit(1);
     }
-    if (address >= (0x10000 - RESERVED_STACK_SIZE)) {
-        fprintf(stderr, "Write denied: Address 0x%04X is inside Reserved Stack Area.\n", address);
+
+    // 2. reserved stack area, only protected if in user mode
+    if (!is_system && address >= (0x10000 - RESERVED_STACK_SIZE)) {
+        fprintf(stderr, "Access Violation: User code tried to write to Stack Area at 0x%04X\n", address);
         exit(1);
     }
 }

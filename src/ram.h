@@ -4,8 +4,6 @@
 #include <stdint.h>
 
 #define RAM_SIZE 65536                  // 64 KiB RAM
-#define MMIO_VISUAL_BEGIN 0x4000        // 16384
-#define MMIO_VISUAL_END 0x40FF          // 16639    => 255 bytes of video buffer
 
 typedef struct {
     uint8_t memory[RAM_SIZE];

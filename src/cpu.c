@@ -458,7 +458,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
             }
 
             uint8_t value = cpu->registers[reg_from];
-            ram_write_stack(ram, --cpu->SP, value);
+            bus_write_system(ram, --cpu->SP, value);
             break;
         }
 
@@ -487,8 +487,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
             uint16_t value = cpu->PC;
             uint8_t valHI = (value >> 8) & 0xFF;
             uint8_t valLO = value & 0xFF;
-            ram_write_stack(ram, --cpu->SP, valLO);
-            ram_write_stack(ram, --cpu->SP, valHI);
+            bus_write_system(ram, --cpu->SP, valLO);
+            bus_write_system(ram, --cpu->SP, valHI);
 
             cpu->PC = addr;
             break;

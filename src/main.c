@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "bus.h"
 #include "cpu.h"
 #include "gpu.h"
 #include "fs/fs.h"
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
 
     while (!cpu.halted) {
         cpu_step(&cpu, &ram);
+        bus_tick();
         if (gpu_dirty) { gpu_render(&ram); gpu_dirty = false; }
     }
 

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 #include "gpu.h"
 #include "bus.h"
 
@@ -15,11 +16,16 @@ void gpu_render(RAM* ram) {
         printf("│");
         for (int x = 0; x < 32; x++) {
             uint16_t offset = (y * 32) + x;
-            uint16_t address = MMIO_VISUAL_BEGIN + offset;
+            uint16_t address = MMIO_GPU_START + offset;
 
             uint8_t pixel = bus_read(ram, address);
 
-            char c = (pixel == 0) ? ' ' : (char)pixel;
+            char c;
+            if (isprint(pixel)) {
+                c = (char)pixel;
+            } else {
+                c = '.';        // substitute
+            }
             putchar(c);
         }
         printf("│\n");
