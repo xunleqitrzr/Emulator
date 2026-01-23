@@ -1,6 +1,5 @@
 #include "cpu.h"
-
-#include "ram.h"
+#include "bus.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -150,16 +149,16 @@ void cpu_reset(CPU *cpu) {
 void cpu_step(CPU* cpu, RAM* ram) {
     if (cpu->halted) return;
 
-    uint8_t opcode = ram_read(ram, cpu->PC++);
+    uint8_t opcode = bus_read(ram, cpu->PC++);
 
     switch (opcode) {
         case NOP:
             break;
 
         case LDA: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-            cpu->registers[A] = ram_read(ram, addr);
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;
+            addr |= bus_read(ram, cpu->PC++);
+            cpu->registers[A] = bus_read(ram, addr);
 
             if (cpu->registers[A] == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
             else clear_flag(&cpu->FLAGS, FLAG_ZERO);
@@ -167,14 +166,14 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case LDB: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-            cpu->registers[B] = ram_read(ram, addr);
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;
+            addr |= bus_read(ram, cpu->PC++);
+            cpu->registers[B] = bus_read(ram, addr);
             break;
         }
 
         case LDI: {
-            uint8_t immediate_value = ram_read(ram, cpu->PC++);
+            uint8_t immediate_value = bus_read(ram, cpu->PC++);
             cpu->registers[A] = immediate_value;
 
             if (cpu->registers[A] == 0) set_flag(&cpu->FLAGS, FLAG_ZERO);
@@ -183,7 +182,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case INC: {      // not updating the carry flag on purpose
-            uint8_t reg_inc = ram_read(ram, cpu->PC++);
+            uint8_t reg_inc = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_inc)) exit(1);
 
@@ -196,7 +195,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case DEC: {      // not updating the carry flag on purpose
-            uint8_t reg_dec = ram_read(ram, cpu->PC++);
+            uint8_t reg_dec = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_dec)) exit(1);
 
@@ -209,8 +208,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case ADD: {     // ADD C, B
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -225,8 +224,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case SUB: {     // SUB C, B
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -241,8 +240,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case MUL: {     // MUL D, B
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -257,22 +256,22 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case STA: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-            ram_write(ram, addr, cpu->registers[A]);
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;
+            addr |= bus_read(ram, cpu->PC++);
+            bus_write(ram, addr, cpu->registers[A]);
             break;
         }
 
         case STB: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
-            ram_write(ram, addr, cpu->registers[B]);
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;
+            addr |= bus_read(ram, cpu->PC++);
+            bus_write(ram, addr, cpu->registers[B]);
             break;
         }
 
         case MOV: {     // move B register into A: MOV A, B
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -284,8 +283,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case CMP: {     // CMP B, D
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -299,8 +298,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         #define JUMP_IF(condition) \
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8; \
-            addr |= ram_read(ram, cpu->PC++); \
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8; \
+            addr |= bus_read(ram, cpu->PC++); \
             if (condition) cpu->PC = addr
 
         case JMP: {     // unconditional jump
@@ -387,8 +386,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case AND: {
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -403,8 +402,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case OR: {
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -419,8 +418,8 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case XOR: {
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
@@ -435,7 +434,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case NOT: {
-            uint8_t reg_not = ram_read(ram, cpu->PC++);
+            uint8_t reg_not = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_not)) exit(1);
 
@@ -447,7 +446,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case PUSH: {
-            uint8_t reg_from = ram_read(ram, cpu->PC++);
+            uint8_t reg_from = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_from)) exit(1);
 
@@ -464,18 +463,18 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case POP: {
-            uint8_t reg_to = ram_read(ram, cpu->PC++);
+            uint8_t reg_to = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_to)) exit(1);
 
-            uint8_t value = ram_read(ram, cpu->SP++);
+            uint8_t value = bus_read(ram, cpu->SP++);
             cpu->registers[reg_to] = value;
             break;
         }
 
         case CALL: {
-            uint16_t addr = ram_read(ram, cpu->PC++) << 8;
-            addr |= ram_read(ram, cpu->PC++);
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;
+            addr |= bus_read(ram, cpu->PC++);
 
             // safety check: stack overflow
             // ensure stack does not overwrite program code
@@ -497,15 +496,15 @@ void cpu_step(CPU* cpu, RAM* ram) {
 
         case RET: {
             // 16 bit pop
-            uint16_t PC_addr = ram_read(ram, cpu->SP++) << 8;
-            PC_addr |= ram_read(ram, cpu->SP++);
+            uint16_t PC_addr = bus_read(ram, cpu->SP++) << 8;
+            PC_addr |= bus_read(ram, cpu->SP++);
 
             cpu->PC = PC_addr;
             break;
         }
 
         case SHL: {     // SHL <register>
-            uint8_t reg_shl = ram_read(ram, cpu->PC++);
+            uint8_t reg_shl = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_shl)) exit(1);
 
@@ -520,7 +519,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case SHR: {     // SHR <register>
-            uint8_t reg_shr = ram_read(ram, cpu->PC++);
+            uint8_t reg_shr = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_shr)) exit(1);
 
@@ -534,7 +533,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case ROL: {     // ROL <register>
-            uint8_t reg_rol = ram_read(ram, cpu->PC++);
+            uint8_t reg_rol = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_rol)) exit(1);
 
@@ -549,7 +548,7 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case ROR: {     // ROR <register>
-            uint8_t reg_ror = ram_read(ram, cpu->PC++);
+            uint8_t reg_ror = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_ror)) exit(1);
 
@@ -565,26 +564,26 @@ void cpu_step(CPU* cpu, RAM* ram) {
         }
 
         case LDA_IDX: {     // 4 byte: [OPCODE] [ADDR_HI] [ADD_LO] [REG]
-            uint16_t addr = ram_read(ram, cpu->PC++);       // read three bytes
-            addr |= ram_read(ram, cpu->PC++);
-            uint8_t reg_idx = ram_read(ram, cpu->PC++);     // this one is the index register
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;          // read three bytes
+            addr |= bus_read(ram, cpu->PC++);
+            uint8_t reg_idx = bus_read(ram, cpu->PC++);             // this one is the index register
 
             if (register_out_of_bounds(cpu, reg_idx)) exit(1);
 
             uint16_t eff_addr = addr + cpu->registers[reg_idx];     // calculate effective address in memory
-            cpu->registers[A] = ram_read(ram, eff_addr);            // read from that memory
+            cpu->registers[A] = bus_read(ram, eff_addr);            // read from that memory
             break;
         }
 
         case STA_IDX: {     // 4 byte: [OPCODE] [ADDR_HI] [ADD_LO] [REG]
-            uint16_t addr = ram_read(ram, cpu->PC++);
-            addr |= ram_read(ram, cpu->PC++);
-            uint8_t reg_idx = ram_read(ram, cpu->PC++);
+            uint16_t addr = bus_read(ram, cpu->PC++) << 8;
+            addr |= bus_read(ram, cpu->PC++);
+            uint8_t reg_idx = bus_read(ram, cpu->PC++);
 
             if (register_out_of_bounds(cpu, reg_idx)) exit(1);
 
             uint16_t eff_addr = addr + cpu->registers[reg_idx];
-            ram_write(ram, eff_addr, cpu->registers[A]);
+            bus_write(ram, eff_addr, cpu->registers[A]);
             break;
         }
 

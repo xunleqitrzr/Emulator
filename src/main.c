@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "cpu.h"
-
+#include "gpu.h"
 #include "fs/fs.h"
 #include "security/security.h"
 
@@ -26,8 +26,11 @@ int main(int argc, char* argv[]) {
     set_usable_offset(size);
     printf("Load complete. Starting CPU...\n");
 
+    printf("\033[2J");
+
     while (!cpu.halted) {
         cpu_step(&cpu, &ram);
+        if (gpu_dirty) { gpu_render(&ram); gpu_dirty = false; }
     }
 
     print_state(&cpu);

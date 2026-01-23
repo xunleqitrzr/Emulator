@@ -1,19 +1,30 @@
 #include <stdio.h>
 #include "gpu.h"
-#include "ram.h"
+#include "bus.h"
 
+bool gpu_dirty = false;
+
+// 32x8 Screen Renderer
 void gpu_render(RAM* ram) {
-    printf("\033[H");           // move cursor to top left
+    printf("\033[H");
 
-    for (uint16_t i = MMIO_VISUAL_BEGIN; i <= MMIO_VISUAL_END; i++) {
-        char c = ram_read(ram, i);
-        putchar(c ? c : ' ');
+    // border
+    printf("┌────────────────────────────────┐\n");
 
-        // newline every 16 chars
-        if ((i - MMIO_VISUAL_BEGIN + 1) % 16 == 0) {
-            putchar('\n');
+    for (int y = 0; y < 8; y++) {
+        printf("│");
+        for (int x = 0; x < 32; x++) {
+            uint16_t offset = (y * 32) + x;
+            uint16_t address = MMIO_VISUAL_BEGIN + offset;
+
+            uint8_t pixel = bus_read(ram, address);
+
+            char c = (pixel == 0) ? ' ' : (char)pixel;
+            putchar(c);
         }
+        printf("│\n");
     }
 
+    printf("└────────────────────────────────┘\n");
     fflush(stdout);
 }

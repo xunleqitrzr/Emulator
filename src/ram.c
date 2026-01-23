@@ -15,20 +15,10 @@ uint8_t ram_read(RAM* ram, uint16_t address) {
 
 void ram_write(RAM* ram, uint16_t address, uint8_t value) {
     check_ram_write(address);
-    if ((address >= MMIO_VISUAL_BEGIN) && (address <= MMIO_VISUAL_END)) {
-        // memory mapped i/o: print character to console
-        printf("%c", value);
-        fflush(stdout);
-    }
     ram->memory[address] = value;
 }
 
-void ram_write_stack(RAM* ram, uint16_t address, uint8_t value) {
-    // MMIO check
-    if ((address >= MMIO_VISUAL_BEGIN) && (address <= MMIO_VISUAL_END)) {
-        printf("%c", value);
-        fflush(stdout);
-    }
+void ram_write_stack(RAM* ram, uint16_t address, uint8_t value) {       // no security check;
     ram->memory[address] = value;
 }
 
