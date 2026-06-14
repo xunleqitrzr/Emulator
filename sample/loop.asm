@@ -4,7 +4,7 @@ MOV B, A            ; copy A into register B
 LDI 0               ; load 0 into register A (this is our counter)
 
 START_LOOP:
-    INC             ; increment the value in register A (accumulator)
+    INC A           ; increment the value in register A (accumulator)
     CMP B, A        ; compare B (5) with A (counter)
     JE END_PROG     ; jump if equal (A == 5) to END_PROG
     JMP START_LOOP  ; if not, loop again

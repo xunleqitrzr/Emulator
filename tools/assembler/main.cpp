@@ -38,7 +38,10 @@ std::map<std::string, uint8_t> OPCODES = {
 
 // Map register names (text) to their byte value
 std::map<std::string, uint8_t> REGISTERS = {
-    {"A", 0x00}, {"B", 0x01}, {"C", 0x02}, {"D", 0x03}
+    {"A", 0x00}, {"B", 0x01}, {"C", 0x02}, {"D", 0x03},
+    {"E", 0x04}, {"F", 0x05}, {"G", 0x06}, {"H", 0x07},
+    {"I", 0x08}, {"J", 0x09}, {"K", 0x0A}, {"L", 0x0B},
+    {"M", 0x0C}, {"N", 0x0D}, {"O", 0x0E}, {"P", 0x0F},
 };
 
 // --- Helper Functions ---

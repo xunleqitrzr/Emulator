@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "bus.h"
 #include "cpu.h"
 #include "gpu.h"
@@ -14,6 +15,7 @@ int main(int argc, char* argv[]) {
     }
 
     const char* file_name = argv[1];
+    srand(time(NULL));
 
     CPU cpu;
     RAM ram;

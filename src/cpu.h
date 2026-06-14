@@ -13,7 +13,7 @@
 #define FLAG_OVERFLOW   0x08        // bit 3 --> 1000
 
 typedef struct {
-    uint8_t registers[4];   // general purpose registers
+    uint8_t registers[16];  // general purpose registers
     uint16_t PC;            // program counter
     uint16_t SP;            // stack pointer
     uint8_t FLAGS;          // flags register
@@ -25,6 +25,18 @@ typedef enum {
     B = 0x01,          // B register
     C = 0x02,          // C register
     D = 0x03,          // D register
+    E = 0x04,
+    F = 0x05,
+    G = 0x06,
+    H = 0x07,
+    I = 0x08,
+    J = 0x09,
+    K = 0x0A,
+    L = 0x0B,
+    M = 0x0C,
+    N = 0x0D,
+    O = 0x0E,
+    P = 0x0F,
 } Register;
 
 typedef enum {
@@ -102,6 +114,12 @@ bool register_out_of_bounds(CPU* cpu, uint8_t registers);
 // MISC
 size_t get_number_of_registers(CPU* cpu);
 uint16_t get_stack_pointer(CPU* cpu);
+static inline uint8_t fetch_byte(CPU* cpu, RAM* ram);
+static inline uint16_t fetch_word(CPU* cpu, RAM* ram);
+static inline void stack_push(CPU* cpu, RAM* ram, uint8_t value);
+static inline uint8_t stack_pop(CPU* cpu, RAM* ram);
+static inline void stack_push_word(CPU* cpu, RAM* ram, uint16_t value);
+static inline uint16_t stack_pop_word(CPU* cpu, RAM* ram);
 
 // DEBUG
 void print_state(CPU* cpu);
