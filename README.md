@@ -4,31 +4,31 @@
 
 ### The Emulator consists of:
 - an 8-Bit CPU:
-  - with variable amounts of registers
-  - smaller instruction set than MISC
-  - fully functioning flag logic 
-  - negative number support during comparisons
+    - 16 general-purpose registers (A through P)
+    - smaller instruction set than MISC
+    - fully functioning ALU and flag logic (Zero, Sign, Carry, Overflow)
+    - negative number support during comparisons
 
+- RAM and ROM:
+    - 64 KiB addressable memory space
+    - given program sits inside the ROM
+    - during startup, the ROM gets loaded into RAM
 
-- variable size RAM:
-  - as fast as your RAM is
-  - extendable in code
+- a centralized Bus System:
+    - routes memory reads and writes
+    - implements Memory-Mapped I/O (MMIO)
+    - handles privilege levels (User Mode vs. System Mode)
 
-
-- a ROM:
-  - given program sits inside the ROM 
-  - during startup, the ROM gets load into RAM
-
-
-- a non-implemented bus system
-  - not implemented yet 
-  - yeah, not much to say here
+- virtual Hardware Peripherals:
+    - GPU: 32x8 text-mode visual buffer mapped to 0x4000
+    - RNG: hardware random number generator mapped to 0x9000
+    - Timer: system clock counter mapped to 0xF000
 
 ### Design
-- the emulator emulates a 6502-like CPU
-- register `A` is considered to be the accumulator
-  - `INC` and `DEC` for example perform their operations on the `A` register
-- this is just a personal project, it has it's upsides and downsides
+- the emulator features a Von Neumann architecture with a 6502-like feel
+- includes a custom two-pass assembler (`easm`) to compile `.asm` files into `.bin` executables
+- memory operations support direct and indirect indexed addressing
+- this is just a personal project, it has its upsides and downsides
 
 ![Picture of the design](doc/arch.svg)
 
@@ -42,7 +42,7 @@ Execute
   make all
 ```
 inside the project root directory to build the emulator with Release **and** Debug configurations.<br>
-The build files are inside the `build/` directory. It also contains an `easm` executable 
+The build files are inside the `build/` directory. It also contains an `easm` executable
 which<br>is an assembler used to assemble programs to machine code instructions from a given<br>
 assembly file.
 
@@ -74,10 +74,11 @@ _Procedure_:
    cmake --build build --config Release        # for Release builds
    ```
 5. Build with Visual Studio:
-   1. open the solution file `Emulator.sln` inside `build/` and build with Visual Studio
+    1. open the solution file `Emulator.sln` inside `build/` and build with Visual Studio
 6. (for both options:) the binaries are inside `build/<configuration>`, either `Debug` or `Release`
-   
+
 
 ### Important:
-There are some very simple security implementations.<br>
-It is no longer possible to overwrite the program from within the program itself.
+There is a dedicated memory protection security module.<br>
+- It strictly prevents the program from overwriting its own executable code in memory.<br>
+- It enforces write privileges: user-space code cannot write to the reserved stack area, whereas system-level operations (like `PUSH` and `CALL`) are permitted.
